@@ -32,12 +32,18 @@ class Job < ApplicationRecord
   }
   scope :select_group_concat_suites, -> { select("jobs.*, GROUP_CONCAT(DISTINCT test_suites.device separator '/') AS device, GROUP_CONCAT(DISTINCT test_suites.service separator '/') AS service, GROUP_CONCAT(DISTINCT test_suites.test_category separator '/') AS category, SUM(test_case_results.elapsed_time) AS total_time") }
 
-  def self.get_all_root_jobs
+  def self.all_root_jobs
     Job.all.where("command_and_option not like '%rerun%'").order('jobs.id DESC')
   end
 
-  def self.get_root_jobs(start_num, per_page)
-    Job.join_with_suites(Job.get_all_root_jobs.to_a.map(&:id)[start_num...start_num + per_page])
+  def self.root_jobs(start_num, per_page)
+    Job.join_with_suites(Job.all_root_jobs.to_a
+      .map(&:id)[start_num...start_num + per_page])
+  end
+
+  def self.children_jobs(page, per_page)
+    Job.join_with_suites(Job.select('id').where("command_and_option like '%rerun%'")
+    .page(page).per(per_page).order('jobs.id DESC').to_a)
   end
 
   def self.create_job_tree(parent_jobs, children_jobs)
@@ -61,6 +67,4 @@ class Job < ApplicationRecord
 
     job_tree
   end
-
-
 end
