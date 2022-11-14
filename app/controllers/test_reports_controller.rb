@@ -4,13 +4,12 @@ class TestReportsController < ApplicationController
   before_action :check_round, only: %i[show update]
   def index
     per_page = 30
-    all_roots = Job.all.where("command_and_option not like '%rerun%'").order('jobs.id DESC')
-    @page = Kaminari.paginate_array(all_roots.to_a, total_count: all_roots.length).page(params[:page]).per(per_page)
+    @page = Kaminari.paginate_array(Job.get_all_root_jobs.to_a, total_count: Job.get_all_root_jobs.length).page(params[:page]).per(per_page)
     start_num = params[:page].nil? || params[:page] == 1 ? 0 : per_page * (params[:page].to_i - 1)
-    root_jobs = Job.join_with_suites(all_roots.to_a.map(&:id)[start_num...start_num + per_page])
+    root_jobs = Job.get_root_jobs(start_num, per_page)
     children_jobs = Job.join_with_suites(Job.select('id').where("command_and_option like '%rerun%'").page(params[:page]).per(per_page * 3).order('jobs.id DESC').to_a)
-    root_job_tree = create_job_tree(root_jobs, children_jobs)
-    children_job_tree = create_job_tree(children_jobs, children_jobs)
+    root_job_tree = Job.create_job_tree(root_jobs, children_jobs)
+    children_job_tree = Job.create_job_tree(children_jobs, children_jobs)
 
     @jobs = []
     root_jobs.each { |job| child_loop(root_job_tree.merge(children_job_tree), job[:id], 0) }
@@ -58,28 +57,6 @@ class TestReportsController < ApplicationController
   end
 
   private
-
-  def create_job_tree(parent_jobs, children_jobs)
-    job_tree = {}
-    parent_jobs.each do |parent_job|
-      job_tree[parent_job.id] = {
-        id: parent_job.id,
-        job_start_time: parent_job.start_time,
-        command_and_option: parent_job.command_and_option,
-        device: parent_job.device,
-        service: parent_job.service,
-        category: parent_job.category,
-        total_time: parent_job.total_time,
-        children: []
-      }
-
-      children_jobs.each do |child_job|
-        job_tree[parent_job.id][:children] << child_job.id if parent_job.id == TestReport.get_parent(child_job.command_and_option)
-      end
-    end
-
-    job_tree
-  end
 
   def check_round
     set_job_id
