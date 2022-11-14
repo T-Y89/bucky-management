@@ -19,13 +19,6 @@ class TestReportsController < ApplicationController
     gon.action_name = action_name
   end
 
-  def child_loop(job_tree, job_id, indent_num)
-    @jobs << job_tree[job_id]
-    @jobs.last[:indent_num] = indent_num
-    indent_num += 1
-    job_tree[job_id][:children].reverse_each { |child_job_id| child_loop(job_tree, child_job_id, indent_num) }
-  end
-
   def show
     respond_to do |format|
       format.html { set_var_for_show }
@@ -57,6 +50,13 @@ class TestReportsController < ApplicationController
   end
 
   private
+
+  def child_loop(job_tree, job_id, indent_num)
+    @jobs << job_tree[job_id]
+    @jobs.last[:indent_num] = indent_num
+    indent_num += 1
+    job_tree[job_id][:children].reverse_each { |child_job_id| child_loop(job_tree, child_job_id, indent_num) }
+  end
 
   def check_round
     set_job_id
