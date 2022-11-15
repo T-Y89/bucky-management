@@ -7,7 +7,8 @@ class TestReportsController < ApplicationController
     @page = Kaminari.paginate_array(Job.all_root_jobs.to_a, total_count: Job.all_root_jobs.length).page(params[:page]).per(per_page)
     start_num = params[:page].nil? || params[:page] == 1 ? 0 : per_page * (params[:page].to_i - 1)
     root_jobs = Job.root_jobs(start_num, per_page)
-    children_jobs = Job.children_jobs(params[:page], per_page * 3)
+    # 1ページで取得する小ジョブ数はper_page * 3件分で最低限取れると判断
+    children_jobs = Job.children_jobs(root_jobs.each{ |j| j.id }.min.id, per_page * 3)
     root_job_tree = Job.create_job_tree(root_jobs, children_jobs)
     children_job_tree = Job.create_job_tree(children_jobs, children_jobs)
 

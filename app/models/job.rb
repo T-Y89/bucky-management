@@ -36,14 +36,20 @@ class Job < ApplicationRecord
     Job.all.where("command_and_option not like '%rerun%'").order('jobs.id DESC')
   end
 
+  def self.all_children_jobs(start, limit)
+    Job.all.where("command_and_option like '%rerun%'").where(id: start..).order('jobs.id DESC').limit(limit)
+  end
+
   def self.root_jobs(start_num, per_page)
     Job.join_with_suites(Job.all_root_jobs.to_a
       .map(&:id)[start_num...start_num + per_page])
   end
 
-  def self.children_jobs(page, per_page)
-    Job.join_with_suites(Job.select('id').where("command_and_option like '%rerun%'")
-    .page(page).per(per_page).order('jobs.id DESC').to_a)
+  def self.children_jobs(start, limit)
+    Job.join_with_suites(
+      # 特定のID "より大きい" データを取得するため +1 する
+      Job.all_children_jobs(start + 1, limit).to_a.map(&:id)
+    )
   end
 
   def self.create_job_tree(parent_jobs, children_jobs)
