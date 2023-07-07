@@ -7,14 +7,18 @@
           | Check Status
         th[scope="cols"]
           | Case Name
-        th[scope="cols"]
+        th.long[scope="cols"]
           | Case Description
         th.error-message[scope="cols"]
           | Error Message
+        th.long[scope="cols"]
+          | Create Issue
     tbody
       - data_for_test_reports[:failed_test_cases].each do |ftc|
         - base_url = ftc.github_url
         - file_path = ftc.file_path
+        - body = CGI::escape("## 該当施策\n\n## デバイス\n#{@suite_data.device}\n\n## URL\nhttp://ldat.dev.nxin.jp/test_reports/#{@job.id}")
+        - issue_link = "https://github.com/lifull/ldat-homes/issues/new?title=#{ftc.case_name}&body=#{body}"
         tr
           td
             = form_with url: "result/#{ftc.result_id}", local: false do |f|
@@ -33,3 +37,5 @@
           td
             div.error-message
               = ftc.error_title
+          td
+            = link_to 'create_issue', issue_link, target: '_blank'
